@@ -50,6 +50,10 @@ bin/lint plugins/discourse-walking-challenge
 
 QUnit tests run in the browser at `/tests?target=discourse-walking-challenge`.
 
+## License
+
+MIT. See `LICENSE`. The bundled Pixelify Sans font keeps its own SIL Open Font License (`public/fonts/OFL.txt`).
+
 ## Planned
 
 - Optional device sync: Strava (which covers Garmin, Apple Watch, Fitbit and others) and an Apple Health shortcut. Typing distances in will always work.
