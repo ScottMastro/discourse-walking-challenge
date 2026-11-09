@@ -1,0 +1,10 @@
+en:
+  site_settings:
+    walking_challenge_enabled: "Turn on the walking challenge page at /walk."
+    walking_challenge_announce_topic_id: "ID of the topic where the system user posts when someone reaches a new stop on the route. Use 0 to turn announcements off."
+    walking_challenge_max_entry_km: "Largest distance, in kilometers, that one entry can record. Stops typos like 300 instead of 3.0."
+  walking_challenge:
+    arrival_post:
+      arrived: "@%{username} arrived in **%{place}**!"
+      finished: "@%{username} made it all the way to **%{place}**! :trophy:"
+      total: "%{miles} mi walked, run, ridden or skied so far."

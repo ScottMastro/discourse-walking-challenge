@@ -1,0 +1,12 @@
+walking_challenge:
+  walking_challenge_enabled:
+    default: false
+    client: true
+  walking_challenge_announce_topic_id:
+    default: 0
+    min: 0
+  walking_challenge_max_entry_km:
+    default: 160
+    min: 1
+    max: 1000
+    client: true
