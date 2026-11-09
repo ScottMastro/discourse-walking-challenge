@@ -48,9 +48,11 @@ export const LANDMARKS = [
   { name: "Cycling Road", x: 4, y: 9, kind: "road" },
 ];
 
+// The north and west run off the map toward Johto, so only the east and
+// south have coastline.
 export const LAND = [
-  [-0.7, -0.6],
-  [15.7, -0.6],
+  [-4, -3],
+  [15.7, -3],
   [15.7, 11.4],
   [14.9, 12.2],
   [13.0, 12.4],
@@ -60,7 +62,7 @@ export const LAND = [
   [2.7, 11.7],
   [1.3, 11.7],
   [1.3, 8.7],
-  [-0.7, 8.7],
+  [-4, 8.7],
 ];
 
 // Scenery only: tree clusters and peaks placed in open land, clear of roads.
@@ -76,6 +78,8 @@ export const FORESTS = [
   { x: 8.5, y: 0.9, trees: 4 },
   { x: 0.6, y: 0.4, trees: 3 },
   { x: 3.0, y: 9.6, trees: 3 },
+  { x: -1.45, y: 5.6, trees: 4 },
+  { x: 4.5, y: -0.6, trees: 4 },
 ];
 
 export const PEAKS = [
@@ -89,6 +93,14 @@ export const PEAKS = [
   { x: 15.0, y: 0.6, size: 0.7 },
   { x: -0.25, y: 4.6, size: 0.75 },
   { x: 0.35, y: 3.9, size: 0.95 },
+  // Ranges along the northern and western borders.
+  { x: -1.6, y: 0.3, size: 0.85 },
+  { x: -0.5, y: -0.75, size: 0.75 },
+  { x: 1.7, y: -0.85, size: 0.8 },
+  { x: 7.2, y: -0.9, size: 0.85 },
+  { x: 12.4, y: -0.85, size: 0.75 },
+  { x: -1.75, y: 2.9, size: 0.75 },
+  { x: -1.6, y: 7.6, size: 0.75 },
 ];
 
 // Vermilion's harbor, a bay just south of the city.
