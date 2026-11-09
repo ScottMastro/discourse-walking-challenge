@@ -1,16 +1,15 @@
 import Component from "@glimmer/component";
 import { fn } from "@ember/helper";
-import { on } from "@ember/modifier";
 import { action } from "@ember/object";
 import { service } from "@ember/service";
-import bodyClass from "discourse/helpers/body-class";
 import routeAction from "discourse/helpers/route-action";
+import DButton from "discourse/ui-kit/d-button";
 import { i18n } from "discourse-i18n";
 import WalkChallenge from "../../lib/walk/challenge.js";
 import WalkLogDistance from "../modal/walk-log-distance.gjs";
 import WalkMyLog from "../modal/walk-my-log.gjs";
-import WalkOverworld from "./overworld.gjs";
-import WalkStandings from "./standings.gjs";
+import WalkKantoMap from "./kanto-map.gjs";
+import WalkRaceStrip from "./race-strip.gjs";
 import WalkTrainerCard from "./trainer-card.gjs";
 
 export default class WalkPage extends Component {
@@ -48,51 +47,56 @@ export default class WalkPage extends Component {
   }
 
   <template>
-    {{bodyClass "walk-page"}}
     <div class="walk">
-      <header class="walk__bar">
+      <header class="walk__header">
         <div class="walk__heading">
           <h1 class="walk__title">{{i18n "walking_challenge.title"}}</h1>
-          <p class="walk__route">{{this.routeSummary}}</p>
+          <p class="walk__summary">{{this.routeSummary}}</p>
         </div>
-        <div
-          aria-label={{i18n "walking_challenge.units"}}
-          class="walk__units"
-          role="group"
-        >
-          <button
-            aria-pressed={{if (eq this.challenge.unit "mi") "true" "false"}}
-            type="button"
-            {{on "click" (fn this.setUnit "mi")}}
-          >mi</button>
-          <button
-            aria-pressed={{if (eq this.challenge.unit "km") "true" "false"}}
-            type="button"
-            {{on "click" (fn this.setUnit "km")}}
-          >km</button>
+        <div class="walk__controls">
+          <div
+            aria-label={{i18n "walking_challenge.units"}}
+            class="walk__units btn-group"
+            role="group"
+          >
+            <DButton
+              class="btn-small
+                {{if
+                  (eq this.challenge.unit 'mi')
+                  'btn-primary'
+                  'btn-default'
+                }}"
+              @action={{fn this.setUnit "mi"}}
+              @ariaPressed={{eq this.challenge.unit "mi"}}
+              @translatedLabel="mi"
+            />
+            <DButton
+              class="btn-small
+                {{if
+                  (eq this.challenge.unit 'km')
+                  'btn-primary'
+                  'btn-default'
+                }}"
+              @action={{fn this.setUnit "km"}}
+              @ariaPressed={{eq this.challenge.unit "km"}}
+              @translatedLabel="km"
+            />
+          </div>
+          {{#unless this.currentUser}}
+            <DButton
+              class="btn-primary"
+              @action={{routeAction "showLogin"}}
+              @icon="user"
+              @label="walking_challenge.log_in_to_join"
+            />
+          {{/unless}}
         </div>
-        {{#if this.currentUser}}
-          <button
-            class="walk-button --gold"
-            type="button"
-            {{on "click" this.openLog}}
-          >
-            {{i18n "walking_challenge.log_distance"}}
-          </button>
-        {{else}}
-          <button
-            class="walk-button --gold"
-            type="button"
-            {{on "click" (routeAction "showLogin")}}
-          >
-            {{i18n "walking_challenge.log_in_to_join"}}
-          </button>
-        {{/if}}
       </header>
 
-      <WalkOverworld @challenge={{this.challenge}} />
+      <WalkRaceStrip @challenge={{this.challenge}} />
 
-      <div class="walk__panels">
+      <div class="walk__body">
+        <WalkKantoMap @challenge={{this.challenge}} />
         {{#if this.currentUser}}
           <WalkTrainerCard
             @challenge={{this.challenge}}
@@ -100,7 +104,6 @@ export default class WalkPage extends Component {
             @onShowLog={{this.openMyLog}}
           />
         {{/if}}
-        <WalkStandings @challenge={{this.challenge}} />
       </div>
     </div>
   </template>

@@ -10,7 +10,7 @@ enabled_site_setting :walking_challenge_enabled
 
 register_asset "stylesheets/walk.scss"
 
-register_svg_icon "person-walking"
+%w[person-walking circle-check far-circle list plus user].each { |icon| register_svg_icon(icon) }
 
 module ::WalkingChallenge
   PLUGIN_NAME = "discourse-walking-challenge"

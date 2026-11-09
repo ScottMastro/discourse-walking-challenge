@@ -74,40 +74,44 @@ acceptance("Walking challenge | walk page", function (needs) {
     });
   });
 
-  test("shows the route, standings and your card", async function (assert) {
+  test("shows the map, the race strip and your card", async function (assert) {
     await visit("/walk");
 
     assert.dom(".walk__title").hasText("Let's Be He4lthy");
-    assert.dom(".walk-map__town").exists({ count: 10 });
-    assert.dom(".walk-standings__row").exists({ count: 2 });
+    assert.dom(".walk-map__town").exists({ count: 11 });
+    assert.dom(".walk-map__leg").exists({ count: 2 });
+    assert.dom(".walk-race__racer").exists({ count: 2 });
     assert
-      .dom(".walk-standings__row.--you .walk-standings__name")
-      .hasText("eviltrout");
-    assert.dom(".walk-card__total").hasText("0.0mi");
-    assert.dom(".walk-card__stamp").exists({ count: 2 });
+      .dom(".walk-race__racer.--you")
+      .hasAttribute("data-user-card", "eviltrout");
+    assert.dom(".walk-map__walker.--you").exists();
+    assert.dom(".walk-card__total strong").hasText("0.0 mi");
+    assert.dom(".walk-card__stop").exists({ count: 2 });
   });
 
-  test("logging a distance moves you along the route", async function (assert) {
+  test("logging a distance updates your card", async function (assert) {
     await visit("/walk");
-    await click(".walk__bar .walk-button.--gold");
+    await click(".walk-card__actions .btn-primary");
     await fillIn(".walk-log-modal input[name='distance']", "5");
     await click(".walk-log-modal button[type='submit']");
 
     assert.strictEqual(posted.distance, "5");
     assert.strictEqual(posted.unit, "mi");
-    assert.dom(".walk-card__total").hasText(`${(5000 / MILE).toFixed(1)}mi`);
     assert
-      .dom(".walk-standings__row.--you .walk-standings__distance")
-      .hasText("3.1 mi");
+      .dom(".walk-card__total strong")
+      .hasText(`${(5000 / MILE).toFixed(1)} mi`);
+    assert
+      .dom(".walk-race__racer.--you")
+      .hasAttribute("title", "eviltrout: 3.1 mi");
   });
 
   test("switching units changes every distance", async function (assert) {
     await visit("/walk");
     await click(".walk__units button:last-child");
 
+    assert.dom(".walk__summary").includesText("441 km");
     assert
-      .dom(".walk-standings__row:first-child .walk-standings__distance")
-      .hasText("84.2 km");
-    assert.dom(".walk__route").includesText("441 km");
+      .dom(".walk-race__racer:not(.--you)")
+      .hasAttribute("title", "dalewilliamson: 84.2 km");
   });
 });

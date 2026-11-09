@@ -1,4 +1,4 @@
-import { LEG_PATHS, TILE } from "./geometry.js";
+import { LEG_PATHS, pointAlong } from "./kanto.js";
 
 export const METERS_PER_MILE = 1609.344;
 export const METERS_PER_KM = 1000;
@@ -22,17 +22,6 @@ export function formatDistance(meters, unit, digits = 1) {
   return `${distanceIn(meters, unit).toFixed(digits)} ${unit}`;
 }
 
-function pathLength(path) {
-  let length = 0;
-  for (let i = 1; i < path.length; i++) {
-    length += Math.hypot(
-      path[i][0] - path[i - 1][0],
-      path[i][1] - path[i - 1][1]
-    );
-  }
-  return length;
-}
-
 export default class RouteProgress {
   constructor(legs) {
     this.legs = legs;
@@ -42,7 +31,6 @@ export default class RouteProgress {
       return sum + leg.meters;
     }, 0);
     this.totalMeters = this.stops.at(-1) ?? 0;
-    this.lengths = LEG_PATHS.map((leg) => pathLength(leg.path));
   }
 
   stopsReached(meters) {
@@ -51,6 +39,12 @@ export default class RouteProgress {
 
   finished(meters) {
     return meters >= this.totalMeters;
+  }
+
+  fractionOfRoute(meters) {
+    return this.totalMeters
+      ? Math.min(1, Math.max(0, meters / this.totalMeters))
+      : 0;
   }
 
   locate(meters) {
@@ -69,24 +63,8 @@ export default class RouteProgress {
     };
   }
 
-  point(meters) {
+  mapPoint(meters) {
     const { index, fraction } = this.locate(meters);
-    const path = LEG_PATHS[index].path;
-    let target = fraction * this.lengths[index];
-
-    for (let i = 1; i < path.length; i++) {
-      const [ax, ay] = path[i - 1];
-      const [bx, by] = path[i];
-      const segment = Math.hypot(bx - ax, by - ay);
-      if (target <= segment || i === path.length - 1) {
-        const t = segment ? Math.min(1, target / segment) : 0;
-        return [
-          (ax + (bx - ax) * t + 1) * TILE,
-          (ay + (by - ay) * t + 1) * TILE,
-        ];
-      }
-      target -= segment;
-    }
-    return [(path[0][0] + 1) * TILE, (path[0][1] + 1) * TILE];
+    return pointAlong(LEG_PATHS[index].path, fraction);
   }
 }

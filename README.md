@@ -1,17 +1,19 @@
 # discourse-walking-challenge
 
-A shared distance challenge for Discourse. Members log their walks, runs, rides and ski trips, and everyone travels together along a 708 mile route drawn as an original pixel-art overworld at `/walk`.
+A shared distance challenge for Discourse. Members log their walks, runs, rides and ski trips, and everyone travels together along a 708 mile route through Kanto at `/walk`.
 
 Built for the "Let's Be He4lthy" distance challenge on Elite Fourum.
 
 ## What it does
 
-- **`/walk` page**: a scrollable overworld map with every participant as a walker on the route, a typewriter text box for recent activity, a trainer card with leg stamps, and standings.
+- **Race strip**: one track from Pallet Town to Indigo Plateau with everyone's avatar at their relative position.
+- **Map**: a full map of Kanto laid out like the Gen 1 Town Map, with the challenge route drawn along the real roads and sea routes, and members' avatars where they are. Clicking an avatar opens their user card.
+- **Your progress**: total distance, distance to the next stop, and a checklist of all nine stops, in the forum's own styling.
 - **Logging**: walk, run, bike, hike, ski or other, in miles or kilometers. Each member can review and remove their own entries; staff can remove any entry.
 - **Arrival posts (optional)**: when someone reaches a new town, the system user posts in a topic you choose. Each stop is announced once per member, even if entries are later edited.
 - **Safety rails**: a per-entry distance cap to catch typos, and a rate limit on logging.
 
-All art, sprites and the map are drawn in code. The bundled Pixelify Sans font is licensed under the SIL Open Font License (see `public/fonts/OFL.txt`).
+The map is drawn in code from Town Map coordinates. It follows Kanto's geography but uses no artwork from the games.
 
 ## Install
 
@@ -52,7 +54,7 @@ QUnit tests run in the browser at `/tests?target=discourse-walking-challenge`.
 
 ## License
 
-MIT. See `LICENSE`. The bundled Pixelify Sans font keeps its own SIL Open Font License (`public/fonts/OFL.txt`).
+MIT. See `LICENSE`.
 
 ## Planned
 

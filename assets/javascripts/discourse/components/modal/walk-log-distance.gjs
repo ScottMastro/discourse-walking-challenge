@@ -1,5 +1,6 @@
 import Component from "@glimmer/component";
 import { action } from "@ember/object";
+import { service } from "@ember/service";
 import Form from "discourse/components/form";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import DModal from "discourse/ui-kit/d-modal";
@@ -14,6 +15,8 @@ function today() {
 }
 
 export default class WalkLogDistance extends Component {
+  @service toasts;
+
   activities = ACTIVITIES.map((value) => ({
     value,
     label: i18n(`walking_challenge.activities.${value}`),
@@ -34,9 +37,22 @@ export default class WalkLogDistance extends Component {
 
   @action
   async submit(data) {
+    const challenge = this.args.model.challenge;
     try {
+      const { entry, arrivals } = await challenge.logDistance(data);
       this.args.closeModal();
-      await this.args.model.challenge.logDistance(data);
+      const logged = i18n("walking_challenge.toasts.logged", {
+        distance: challenge.format(entry.distance_meters),
+      });
+      const reached = arrivals.length
+        ? i18n("walking_challenge.toasts.arrived", {
+            places: arrivals.join(", "),
+          })
+        : "";
+      this.toasts.success({
+        duration: "long",
+        data: { message: [logged, reached].filter(Boolean).join(" ") },
+      });
     } catch (error) {
       popupAjaxError(error);
     }
@@ -125,10 +141,7 @@ export default class WalkLogDistance extends Component {
           </form.Field>
 
           <form.Actions>
-            <form.Submit
-              class="walk-button --gold"
-              @label="walking_challenge.log_distance"
-            />
+            <form.Submit @label="walking_challenge.log_distance" />
           </form.Actions>
         </Form>
       </:body>

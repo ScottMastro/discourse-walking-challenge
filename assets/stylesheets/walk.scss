@@ -1,691 +1,514 @@
-@font-face {
-  font-family: "Pixelify Sans";
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: url("/plugins/discourse-walking-challenge/fonts/PixelifySans-latin.woff2")
-    format("woff2");
-}
-
+// The map keeps fixed land and sea colors so it reads the same in every theme;
+// everything else uses the forum's own Discourse color variables.
 :root {
-  --walk-ink: #232a44;
-  --walk-ink-soft: #5b6488;
-  --walk-paper: #fbfbf4;
-  --walk-paper-dim: #ecebdc;
-  --walk-gold: #f0bf2c;
-  --walk-gold-deep: #c99a12;
-  --walk-night: #34426a;
-  --walk-night-dot: #3c4b77;
-  --walk-moon: #c9d1ef;
-  --walk-sea: #3f86cf;
-  --walk-you: #fff3c4;
-  --walk-font: "Pixelify Sans", var(--font-family);
+  --walk-sea: #a8d4f0;
+  --walk-coast: #6fa8cf;
+  --walk-land: #dbe9bb;
+  --walk-road: #fbf6e6;
+  --walk-road-sea: #e4f2fb;
+  --walk-route: #d0473b;
+  --walk-label: #22301f;
+  --walk-halo: rgb(255 255 255 / 0.9);
+  --walk-panel-border: var(--primary-low);
 }
 
-@mixin walk-window {
-  position: relative;
-  background: var(--walk-paper);
-  color: var(--walk-ink);
-  border: 3px solid var(--walk-ink);
-  box-shadow:
-    inset 0 0 0 3px var(--walk-paper),
-    inset 0 0 0 5px var(--walk-ink-soft),
-    0 4px 0 rgb(20 24 44 / 0.45);
-  clip-path: polygon(
-    0 3px,
-    3px 3px,
-    3px 0,
-    calc(100% - 3px) 0,
-    calc(100% - 3px) 3px,
-    100% 3px,
-    100% calc(100% - 3px),
-    calc(100% - 3px) calc(100% - 3px),
-    calc(100% - 3px) 100%,
-    3px 100%,
-    3px calc(100% - 3px),
-    0 calc(100% - 3px)
-  );
-}
-
-.walk-window {
-  @include walk-window;
-  padding: 1.1rem 1.25rem;
-}
-
-.walk-button {
-  appearance: none;
-  border: 3px solid var(--walk-ink);
-  background: var(--walk-paper);
-  color: var(--walk-ink);
-  padding: 0.35rem 0.85rem 0.4rem;
-  font-family: var(--walk-font);
-  font-size: 1.1rem;
-  font-weight: 600;
-  line-height: 1.2;
-  cursor: pointer;
-  box-shadow: 0 3px 0 var(--walk-ink);
-
-  &:hover {
-    background: var(--walk-paper-dim);
-  }
-
-  &:active {
-    transform: translateY(3px);
-    box-shadow: none;
-  }
-
-  &.--gold {
-    background: var(--walk-gold);
-
-    &:hover {
-      background: #f6cc4a;
-    }
-  }
-}
-
-.walk-sprite {
-  display: inline-block;
-  background: center / 100% 100% no-repeat;
-  image-rendering: pixelated;
-}
-
-/* ---------- page ---------- */
 .walk {
-  font-family: var(--walk-font);
-  font-size: 1.125rem;
-  line-height: 1.35;
-  color: var(--walk-ink);
-  background-color: var(--walk-night);
-  background-image:
-    linear-gradient(
-      45deg,
-      var(--walk-night-dot) 25%,
-      transparent 25%,
-      transparent 75%,
-      var(--walk-night-dot) 75%
-    ),
-    linear-gradient(
-      45deg,
-      var(--walk-night-dot) 25%,
-      transparent 25%,
-      transparent 75%,
-      var(--walk-night-dot) 75%
-    );
-  background-size: 4px 4px;
-  background-position:
-    0 0,
-    2px 2px;
-  padding: 1.25rem 1.25rem 2rem;
-  margin-block: 1rem;
-  -webkit-font-smoothing: none;
+  display: grid;
+  gap: 1.25rem;
+  margin-block: 1.5rem;
 
-  :focus-visible {
-    outline: 3px dashed var(--walk-gold);
-    outline-offset: 3px;
-  }
-
-  h1,
-  h2,
-  h3,
-  p {
-    font-family: var(--walk-font);
-  }
-
-  &__bar {
+  &__header {
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    color: var(--walk-paper);
-  }
-
-  &__heading {
-    flex: 1 1 18rem;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
   }
 
   &__title {
     margin: 0;
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--walk-paper);
-    text-shadow: 0 3px 0 var(--walk-ink);
+    font-size: var(--font-up-4);
   }
 
-  &__route {
-    margin: 0.3rem 0 0;
-    font-size: 1rem;
-    color: var(--walk-moon);
+  &__summary {
+    margin: 0.25rem 0 0;
+    color: var(--primary-medium);
   }
 
-  &__units {
-    display: inline-flex;
-    border: 2px solid var(--walk-paper);
-
-    button {
-      border: 0;
-      background: transparent;
-      color: var(--walk-paper);
-      padding: 0.2rem 0.6rem 0.25rem;
-      font-family: var(--walk-font);
-      font-size: 1rem;
-      cursor: pointer;
-
-      &[aria-pressed="true"] {
-        background: var(--walk-paper);
-        color: var(--walk-ink);
-      }
-    }
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  &__panels {
+  &__body {
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: 1.5rem;
+    grid-template-columns: minmax(0, 3fr) minmax(17rem, 2fr);
+    gap: 1.25rem;
     align-items: start;
-    margin-top: 2rem;
 
     > :only-child {
       grid-column: 1 / -1;
     }
-  }
 
-  @media (width <= 860px) {
-    padding-inline: 0.75rem;
-
-    &__title {
-      font-size: 1.6rem;
-    }
-
-    &__panels {
-      grid-template-columns: 1fr;
+    @media (width <= 900px) {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 }
 
-/* ---------- map ---------- */
-.walk-map {
-  position: relative;
-  border: 3px solid var(--walk-ink);
-  box-shadow:
-    0 0 0 3px var(--walk-paper),
-    0 0 0 6px var(--walk-ink),
-    0 10px 0 6px rgb(20 24 44 / 0.45);
-  background: var(--walk-sea);
+// ---------- race strip ----------
+.walk-race {
+  --walk-lane-height: 26px;
+  padding: 0.75rem 1.75rem 0.5rem;
+  background: var(--secondary);
+  border: 1px solid var(--walk-panel-border);
+  border-radius: var(--d-border-radius-large);
 
-  &__viewport {
-    position: relative;
-    z-index: 0;
-    height: clamp(380px, 62vh, 700px);
-    overflow: auto;
-    cursor: grab;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--walk-ink) var(--walk-paper-dim);
-
-    &.is-dragging {
-      cursor: grabbing;
-    }
-
-    &.--whole {
-      height: auto;
-      padding-bottom: 116px;
-    }
+  &__title {
+    margin: 0 0 0.5rem -0.75rem;
+    font-size: var(--font-up-1);
   }
 
-  &__world {
+  &__track {
     position: relative;
-    width: calc(1536px * var(--walk-scale));
-    height: calc(832px * var(--walk-scale));
+    height: calc(var(--walk-lanes) * var(--walk-lane-height) + 4.25rem);
   }
 
-  &__terrain {
+  &__line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--walk-lanes) * var(--walk-lane-height) + 0.5rem);
+    height: 6px;
+    background: var(--primary-low);
+    border-radius: 3px;
+  }
+
+  &__racers {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    image-rendering: pixelated;
   }
 
-  &__town {
+  &__racer {
     position: absolute;
-    transform: translate(-50%, -100%);
-    background: var(--walk-paper);
-    border: 2px solid var(--walk-ink);
-    padding: 0 0.45rem 1px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    white-space: nowrap;
-    pointer-events: none;
-    box-shadow: 0 2px 0 var(--walk-ink);
+    top: calc(
+      (var(--walk-lanes) - 1 - var(--walk-lane)) * var(--walk-lane-height)
+    );
+    width: 28px;
+    height: 28px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--secondary);
+    z-index: 1;
 
-    &.--final {
-      background: var(--walk-gold);
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
     }
-  }
 
-  &__walker {
-    position: absolute;
-    width: calc(16px * var(--walk-scale));
-    height: calc(16px * var(--walk-scale));
-    padding: 0;
-    border: 0;
-    background: transparent center / 100% 100% no-repeat;
-    image-rendering: pixelated;
-    cursor: pointer;
-    transform: translate(-50%, -88%);
+    &.--you {
+      z-index: 2;
+      box-shadow:
+        0 0 0 2px var(--secondary),
+        0 0 0 4px var(--tertiary);
+    }
 
+    &:hover,
     &:focus-visible {
-      outline-offset: 0;
+      z-index: 3;
     }
+  }
 
-    &.--you::after {
+  &__ticks {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--walk-lanes) * var(--walk-lane-height) + 0.5rem + 3px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__tick {
+    position: absolute;
+    transform: translateX(-50%);
+
+    &::before {
       content: "";
       position: absolute;
       left: 50%;
-      top: calc(-7px * var(--walk-scale));
-      margin-left: calc(-4px * var(--walk-scale));
-      border-left: calc(4px * var(--walk-scale)) solid transparent;
-      border-right: calc(4px * var(--walk-scale)) solid transparent;
-      border-top: calc(4px * var(--walk-scale)) solid var(--walk-gold);
-      filter: drop-shadow(0 2px 0 var(--walk-ink));
-      animation: walk-bob 1s steps(2) infinite;
-    }
-
-    &:hover::after,
-    &:focus-visible::after {
-      display: none;
+      top: 0;
+      width: 12px;
+      height: 12px;
+      transform: translate(-50%, -50%);
+      background: var(--walk-town);
+      border: 2px solid var(--primary-high);
+      border-radius: 50%;
     }
   }
 
-  &__tag {
+  &__label {
     position: absolute;
+    top: calc(0.65rem + var(--walk-row) * 1.2rem);
     left: 50%;
-    bottom: 100%;
-    transform: translate(-50%, -6px);
-    display: none;
-    background: var(--walk-paper);
-    border: 2px solid var(--walk-ink);
-    padding: 0 0.4rem 1px;
-    font-family: var(--walk-font);
-    font-size: 0.875rem;
-    color: var(--walk-ink);
+    transform: translateX(-50%);
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
     white-space: nowrap;
+  }
+}
 
-    .walk-map__walker:hover &,
-    .walk-map__walker:focus-visible & {
-      display: block;
+// ---------- map ----------
+.walk-map {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--secondary);
+  border: 1px solid var(--walk-panel-border);
+  border-radius: var(--d-border-radius-large);
+
+  &__canvas {
+    position: relative;
+    aspect-ratio: 200 / 178;
+    border-radius: var(--d-border-radius);
+    overflow: hidden;
+  }
+
+  &__svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    text {
+      paint-order: stroke;
+      stroke: var(--walk-halo);
+      stroke-linejoin: round;
     }
   }
 
-  &__controls {
-    position: absolute;
-    z-index: 2;
-    top: 0.75rem;
-    right: 0.75rem;
-    display: flex;
-    gap: 0.5rem;
+  &__sea {
+    fill: var(--walk-sea);
+  }
 
-    .walk-button {
-      font-size: 0.95rem;
-      padding: 0.2rem 0.6rem 0.25rem;
+  &__land,
+  &__island {
+    fill: var(--walk-land);
+    stroke: var(--walk-coast);
+    stroke-width: 0.08;
+    stroke-linejoin: round;
+  }
+
+  &__harbor {
+    fill: var(--walk-sea);
+  }
+
+  &__road {
+    fill: none;
+    stroke: var(--walk-road);
+    stroke-width: 0.17;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    &.--sea {
+      stroke: var(--walk-road-sea);
+      stroke-dasharray: 0.25 0.2;
     }
   }
-}
 
-@keyframes walk-bob {
-  50% {
-    transform: translateY(calc(-2px * var(--walk-scale)));
+  &__landmark {
+    polygon {
+      fill: #a58d6b;
+      stroke: #6f5c43;
+      stroke-width: 0.05;
+      stroke-linejoin: round;
+    }
+
+    circle {
+      fill: #4f8f4a;
+      stroke: #2f6a33;
+      stroke-width: 0.05;
+    }
+
+    text {
+      font-size: 0.36px;
+      font-style: italic;
+      fill: #4d5a3e;
+      stroke-width: 0.12;
+      text-anchor: middle;
+    }
   }
-}
 
-.walk-text-box {
-  position: absolute;
-  z-index: 2;
-  left: 0.75rem;
-  right: 0.75rem;
-  bottom: 0.75rem;
-  max-width: 760px;
-  min-height: 84px;
-  margin: 0 auto;
-  padding: 0.9rem 2.75rem 0.9rem 1.25rem;
-  font-size: 1.25rem;
-  line-height: 1.45;
-  cursor: pointer;
-  user-select: none;
+  &__road-label {
+    font-size: 0.32px;
+    font-style: italic;
+    fill: #6b6450;
+    stroke-width: 0.1;
+    text-anchor: middle;
+  }
 
-  &__more {
+  &__leg {
+    cursor: help;
+  }
+
+  &__leg-casing {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 0.38;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &__leg-line {
+    fill: none;
+    stroke: var(--walk-route);
+    stroke-width: 0.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    .--sea > & {
+      stroke-dasharray: 0.34 0.22;
+    }
+  }
+
+  &__leg-arrow {
+    fill: var(--walk-route);
+    stroke: #fff;
+    stroke-width: 0.05;
+  }
+
+  &__town {
+    circle {
+      stroke: #2b2b2b;
+      stroke-width: 0.07;
+    }
+
+    text {
+      font-size: 0.46px;
+      font-weight: 700;
+      fill: var(--walk-label);
+      stroke-width: 0.16;
+    }
+
+    &.--off-route {
+      opacity: 0.6;
+
+      text {
+        font-weight: 400;
+      }
+    }
+
+    &.--finish text {
+      fill: #3b3f99;
+    }
+  }
+
+  &__walkers {
     position: absolute;
-    right: 1.1rem;
-    bottom: 0.75rem;
-    border-left: 7px solid transparent;
-    border-right: 7px solid transparent;
-    border-top: 9px solid var(--walk-ink);
-    animation: walk-blink 1s steps(1) infinite;
+    inset: 0;
+    pointer-events: none;
   }
 
-  @media (width <= 860px) {
-    font-size: 1.05rem;
-    min-height: 72px;
-  }
-}
-
-@keyframes walk-blink {
-  50% {
-    opacity: 0;
-  }
-}
-
-/* ---------- meter ---------- */
-.walk-meter {
-  display: grid;
-  grid-template-columns: repeat(var(--walk-meter-segments), 1fr);
-  gap: 2px;
-  height: 16px;
-  padding: 2px;
-  border: 2px solid var(--walk-ink);
-  background: var(--walk-paper-dim);
-
-  &.--small {
-    height: 12px;
-    gap: 1px;
-    padding: 1px;
-  }
-
-  &__segment.--filled {
-    background: var(--walk-gold);
-    box-shadow: inset 0 -3px 0 var(--walk-gold-deep);
-  }
-}
-
-/* ---------- trainer card ---------- */
-.walk-card {
-  &__who {
+  &__cluster {
+    position: absolute;
     display: flex;
     align-items: center;
-    gap: 0.9rem;
-    margin-bottom: 0.9rem;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
   }
 
-  &__sprite {
-    width: 64px;
-    height: 64px;
-    background-color: var(--walk-paper-dim);
-    border: 2px solid var(--walk-ink);
+  &__walker {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    margin-left: -12px;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 2px #fff,
+      0 1px 4px rgb(0 0 0 / 0.35);
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    &.--you {
+      z-index: 1;
+      width: 38px;
+      height: 38px;
+      box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4px var(--tertiary),
+        0 1px 4px rgb(0 0 0 / 0.35);
+    }
+
+    &:hover,
+    &:focus-visible {
+      z-index: 2;
+    }
+  }
+
+  &__more {
+    margin-left: 3px;
+    padding: 0 0.4em;
+    font-size: var(--font-down-2);
+    font-weight: 700;
+    line-height: 1.6;
+    color: var(--secondary);
+    background: var(--primary-high);
+    border-radius: 999px;
+    cursor: default;
+  }
+
+  &__caption {
+    margin-top: 0.5rem;
+    font-size: var(--font-down-1);
+    color: var(--primary-medium);
+  }
+
+  @media (width <= 600px) {
+    padding: 0.4rem;
+
+    &__walker {
+      width: 24px;
+      height: 24px;
+      margin-left: -9px;
+
+      &.--you {
+        width: 28px;
+        height: 28px;
+      }
+    }
+  }
+}
+
+// ---------- trainer card ----------
+.walk-card {
+  padding: 1rem 1.25rem;
+  background: var(--secondary);
+  border: 1px solid var(--walk-panel-border);
+  border-radius: var(--d-border-radius-large);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    img.avatar {
+      width: 48px;
+      height: 48px;
+    }
   }
 
   &__name {
     margin: 0;
-    font-size: 1.6rem;
-    font-weight: 700;
-    line-height: 1;
+    font-size: var(--font-up-2);
   }
 
-  &__since {
-    margin: 0.25rem 0 0;
-    font-size: 0.95rem;
-    color: var(--walk-ink-soft);
+  &__meta {
+    font-size: var(--font-down-1);
+    color: var(--primary-medium);
   }
 
   &__total {
-    margin: 0.4rem 0 0.1rem;
-    font-size: 3rem;
-    font-weight: 700;
-    line-height: 1;
+    margin: 1rem 0 0.4rem;
 
-    small {
-      margin-left: 0.25rem;
-      font-size: 1.4rem;
-      font-weight: 600;
+    strong {
+      font-size: var(--font-up-4);
+    }
+
+    span {
+      margin-left: 0.35rem;
+      color: var(--primary-medium);
+    }
+  }
+
+  &__bar {
+    height: 8px;
+    overflow: hidden;
+    background: var(--primary-low);
+    border-radius: 4px;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--tertiary);
     }
   }
 
   &__next {
-    margin: 0 0 0.75rem;
+    margin: 0.5rem 0 1rem;
+    font-weight: 600;
   }
 
-  &__legend {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
-    color: var(--walk-ink-soft);
+  &__stops {
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
   }
 
-  &__stamps {
+  &__stop {
     display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 6px;
-    margin: 1.1rem 0 0.25rem;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__stamp {
-    aspect-ratio: 1;
-    background: center / 100% 100% no-repeat;
-    image-rendering: pixelated;
-  }
-
-  &__stamp-summary {
-    margin: 0 0 1.1rem;
-    font-size: 0.95rem;
-    color: var(--walk-ink-soft);
-  }
-
-  &__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-  }
-
-  &__sync {
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 2px dashed var(--walk-ink-soft);
-
-    h3 {
-      margin: 0 0 0.25rem;
-      font-size: 1.1rem;
-    }
-
-    p {
-      margin: 0;
-      font-size: 0.95rem;
-      color: var(--walk-ink-soft);
-    }
-  }
-}
-
-/* ---------- standings ---------- */
-.walk-standings {
-  &__title {
-    margin: 0 0 0.75rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.1;
-  }
-
-  &__list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__row {
-    border-bottom: 2px solid var(--walk-paper-dim);
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    color: var(--primary-medium);
+    border-bottom: 1px solid var(--primary-very-low);
 
     &:last-child {
       border-bottom: 0;
     }
 
-    &.--you {
-      background: var(--walk-you);
+    &.--reached {
+      color: var(--primary);
+
+      .d-icon {
+        color: var(--success);
+      }
+    }
+
+    &.--next {
+      color: var(--primary);
+      font-weight: 600;
+
+      .d-icon {
+        color: var(--tertiary);
+      }
     }
   }
 
-  &__button {
-    display: grid;
-    grid-template-columns: 30px 40px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.25rem 0.75rem;
-    width: 100%;
-    padding: 0.55rem 0.4rem;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
+  &__stop-at {
+    font-size: var(--font-down-1);
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-medium);
   }
 
-  &__rank {
-    font-size: 1.25rem;
-    font-weight: 700;
-    text-align: right;
-    color: var(--walk-ink-soft);
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
-  &__sprite {
-    width: 32px;
-    height: 32px;
-  }
-
-  &__body {
-    display: grid;
-    gap: 0.25rem;
-    min-width: 0;
-  }
-
-  &__name {
-    overflow: hidden;
-    font-size: 1.2rem;
-    font-weight: 600;
-    line-height: 1.1;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__where {
-    font-size: 0.95rem;
-    color: var(--walk-ink-soft);
-  }
-
-  &__distance {
-    font-size: 1.25rem;
-    font-weight: 700;
-    text-align: right;
-  }
-
-  &__empty {
-    margin: 0;
+  &__sync {
+    margin: 0.75rem 0 0;
+    font-size: var(--font-down-1);
+    color: var(--primary-medium);
   }
 }
 
-/* ---------- modals ---------- */
-.walk-log-modal {
-  // Pin Discourse's color tokens so forum themes (often dark) can't bleed
-  // into the light pixel window.
-  --primary: var(--walk-ink);
-  --primary-rgb: 35, 42, 68;
-  --primary-very-high: var(--walk-ink);
-  --primary-high: var(--walk-ink);
-  --primary-medium: var(--walk-ink-soft);
-  --primary-low-mid: var(--walk-ink-soft);
-  --primary-low: var(--walk-paper-dim);
-  --primary-very-low: var(--walk-paper);
-  --secondary: var(--walk-paper);
-  --secondary-rgb: 251, 251, 244;
-  --tertiary: var(--walk-ink);
-  --d-input-bg-color: #fff;
-  --d-input-text-color: var(--walk-ink);
-  --d-input-border: 2px solid var(--walk-ink);
-  color: var(--walk-ink);
-
-  .d-modal__container {
-    @include walk-window;
-    font-family: var(--walk-font);
-    border-radius: 0;
-  }
-
-  .d-modal__header,
-  .d-modal__body {
-    border: 0;
-  }
-
-  .d-modal__title-text {
-    font-family: var(--walk-font);
-    font-size: 1.5rem;
-  }
-
-  .form-kit__container-title,
-  .form-kit__control-input,
-  .form-kit__control-select,
-  .form-kit__control-radio-label {
-    font-family: var(--walk-font);
-    font-size: 1.1rem;
-  }
-
-  .form-kit__control-input,
-  .form-kit__control-select {
-    border: 2px solid var(--walk-ink);
-    border-radius: 0;
-  }
-
-  &__activities {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.15rem 1.25rem;
-  }
-
-  .form-kit__control-select.d-native-select {
-    background-color: #fff;
-    color: var(--walk-ink);
-  }
-
-  // Activity menu: hide the radio dot and show the classic ▶ cursor on the
-  // chosen row instead, keeping the input focusable for keyboard users.
-  .form-kit__control-radio-label {
-    position: relative;
-    padding-left: 1.4rem;
-    cursor: pointer;
-  }
-
-  .form-kit__control-radio {
-    position: absolute;
-    left: 0;
-    opacity: 0;
-    width: 1px;
-    height: 1px;
-  }
-
-  .form-kit__control-radio:checked + .form-kit__control-radio-content::before {
-    content: "";
-    position: absolute;
-    left: 0.2rem;
-    top: 50%;
-    transform: translateY(-50%);
-    border-top: 7px solid transparent;
-    border-bottom: 7px solid transparent;
-    border-left: 10px solid var(--walk-ink);
-  }
-
-  .form-kit__control-radio:focus-visible + .form-kit__control-radio-content {
-    outline: 3px dashed var(--walk-gold);
-    outline-offset: 2px;
-  }
-
-  .form-kit__container-title,
-  .form-kit__control-radio-label,
-  .form-kit__container-optional,
-  .form-kit__char-counter {
-    color: var(--walk-ink);
-  }
-
-  .walk-button.btn {
-    border-radius: 0;
-  }
+// ---------- modals ----------
+.walk-log-modal__activities {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
 }
 
 .walk-my-log {
@@ -697,37 +520,20 @@
 
   &__row {
     display: grid;
-    grid-template-columns: 7rem minmax(0, 1fr) auto;
+    grid-template-columns: 5rem minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.75rem;
     padding: 0.4rem 0;
-    border-bottom: 2px solid var(--walk-paper-dim);
+    border-bottom: 1px solid var(--primary-low);
   }
 
   &__date {
-    color: var(--walk-ink-soft);
-  }
-
-  &__remove.btn-flat {
-    color: var(--walk-ink-soft);
-
-    &:hover,
-    &:focus-visible {
-      background: var(--walk-paper-dim);
-      color: var(--walk-ink);
-    }
+    color: var(--primary-medium);
   }
 
   &__note {
     display: block;
-    font-size: 0.95rem;
-    color: var(--walk-ink-soft);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .walk-map__walker.--you::after,
-  .walk-text-box__more {
-    animation: none;
+    font-size: var(--font-down-1);
+    color: var(--primary-medium);
   }
 }

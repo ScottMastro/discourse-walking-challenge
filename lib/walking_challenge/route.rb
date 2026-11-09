@@ -14,8 +14,8 @@ module WalkingChallenge
     LEGS = [
       Leg.new("Pallet Town", "Pewter City", 175),
       Leg.new("Pewter City", "Cerulean City", 99),
-      Leg.new("Cerulean City", "Vermillion City", 65),
-      Leg.new("Vermillion City", "Celadon City", 28),
+      Leg.new("Cerulean City", "Vermilion City", 65),
+      Leg.new("Vermilion City", "Celadon City", 28),
       Leg.new("Celadon City", "Saffron City", 5),
       Leg.new("Saffron City", "Fuchsia City", 62),
       Leg.new("Fuchsia City", "Cinnabar Island", 144),
