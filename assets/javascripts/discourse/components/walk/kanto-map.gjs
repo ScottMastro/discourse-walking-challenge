@@ -5,22 +5,41 @@ import { userPath } from "discourse/lib/url";
 import { i18n } from "discourse-i18n";
 import {
   BAYS,
+  FORESTS,
   ISLANDS,
   LABEL_SIDES,
   LAND,
   LANDMARKS,
   LEG_PATHS,
+  PEAKS,
   pointAlong,
   ROUTES,
+  shorePath,
   TOWNS,
   VIEW_BOX,
 } from "../../lib/walk/kanto.js";
 
-const CLUSTER_RADIUS = 0.95;
+const CLUSTER_RADIUS = 0.8;
 const MAX_FANNED = 3;
-const LABEL_OFFSET = 0.62;
+const TOWN_SIZE = 0.62;
+const LABEL_GAP = 0.5;
+const LABEL_HEIGHT = 0.6;
+const LABEL_CHAR_WIDTH = 0.225;
+const LABEL_PADDING = 0.22;
+
+// Spread of trees within a forest cluster, as offsets from its center.
+const TREE_OFFSETS = [
+  [0, 0],
+  [0.44, 0.12],
+  [-0.4, 0.16],
+  [0.14, -0.38],
+  [-0.16, 0.48],
+  [0.52, -0.3],
+  [-0.48, -0.3],
+];
 
 const points = (path) => path.map(([x, y]) => `${x},${y}`).join(" ");
+const round = (value) => Math.round(value * 1000) / 1000;
 
 function percentStyle(x, y) {
   const left = ((x - VIEW_BOX.x) / VIEW_BOX.width) * 100;
@@ -28,43 +47,120 @@ function percentStyle(x, y) {
   return `left: ${left}%; top: ${top}%`;
 }
 
-function labelPosition(town, side) {
+function ellipsePolygon({ x, y, rx, ry }, corners = 10) {
+  return Array.from({ length: corners }, (_, i) => {
+    const angle = (i / corners) * Math.PI * 2;
+    return [x + Math.cos(angle) * rx, y + Math.sin(angle) * ry];
+  });
+}
+
+function peakShapes({ x, y, size }) {
+  const w = 0.5 * size;
+  const h = 0.85 * size;
+  const top = [x, y - h * 0.6];
+  const left = [x - w, y + h * 0.4];
+  const right = [x + w, y + h * 0.4];
+  const capY = top[1] + h * 0.32;
+  const capW = w * 0.32;
+  return {
+    body: points([left, top, right]),
+    shade: points([top, right, [x + w * 0.1, y + h * 0.4]]),
+    cap: points([
+      top,
+      [x + capW, capY],
+      [x + capW * 0.3, capY - h * 0.06],
+      [x - capW * 0.2, capY + h * 0.02],
+      [x - capW, capY],
+    ]),
+  };
+}
+
+function labelBox(town, side, text) {
+  const width = text.length * LABEL_CHAR_WIDTH + LABEL_PADDING * 2;
+  const half = TOWN_SIZE / 2;
+  let left;
+  let top;
   switch (side) {
     case "left":
-      return { x: town.x - LABEL_OFFSET, y: town.y + 0.18, anchor: "end" };
+      left = town.x - half - LABEL_GAP * 0.4 - width;
+      top = town.y - LABEL_HEIGHT / 2;
+      break;
     case "right":
-      return { x: town.x + LABEL_OFFSET, y: town.y + 0.18, anchor: "start" };
-    case "above-right":
-      return { x: town.x + 0.5, y: town.y - 0.45, anchor: "start" };
+      left = town.x + half + LABEL_GAP * 0.4;
+      top = town.y - LABEL_HEIGHT / 2;
+      break;
     case "below":
-      return { x: town.x, y: town.y + LABEL_OFFSET + 0.35, anchor: "middle" };
+      left = town.x - width / 2;
+      top = town.y + half + LABEL_GAP * 0.3;
+      break;
+    case "above-right":
+      left = town.x + half * 0.6;
+      top = town.y - half - LABEL_GAP * 0.3 - LABEL_HEIGHT;
+      break;
     default:
-      return { x: town.x, y: town.y - LABEL_OFFSET, anchor: "middle" };
+      left = town.x - width / 2;
+      top = town.y - half - LABEL_GAP * 0.3 - LABEL_HEIGHT;
   }
+  return {
+    rectX: round(left),
+    rectY: round(top),
+    rectWidth: round(width),
+    textX: round(left + width / 2),
+    textY: round(top + LABEL_HEIGHT * 0.72),
+  };
 }
 
 export default class WalkKantoMap extends Component {
   viewBox = `${VIEW_BOX.x} ${VIEW_BOX.y} ${VIEW_BOX.width} ${VIEW_BOX.height}`;
-  land = points(LAND);
-  bays = BAYS;
-  islands = ISLANDS;
-  roads = ROUTES.map((route) => ({ ...route, points: points(route.path) }));
-  landmarks = LANDMARKS.filter((landmark) => landmark.kind !== "road").map(
-    (landmark) => ({
-      ...landmark,
-      isMountain: landmark.kind === "mountain",
-      isForest: landmark.kind === "forest",
-      labelX: landmark.vertical ? landmark.x - 0.55 : landmark.x,
-      labelY: landmark.vertical
-        ? landmark.y
-        : landmark.y + (landmark.kind === "island" ? 0.95 : 0.85),
-      labelTransform: landmark.vertical
-        ? `rotate(-90 ${landmark.x - 0.55} ${landmark.y})`
-        : null,
-      mountain: `${landmark.x - 0.42},${landmark.y + 0.3} ${landmark.x},${landmark.y - 0.4} ${landmark.x + 0.42},${landmark.y + 0.3}`,
+  land = shorePath(LAND, { seed: 3 });
+  islands = ISLANDS.map((island, index) =>
+    shorePath(ellipsePolygon(island), {
+      seed: 7 + index,
+      step: 0.35,
+      wiggle: 0.06,
     })
   );
-  roadLabels = LANDMARKS.filter((landmark) => landmark.kind === "road");
+  bays = BAYS.map((bay) =>
+    shorePath(ellipsePolygon(bay, 12), { seed: 11, step: 0.4, wiggle: 0.05 })
+  );
+  roads = ROUTES.map((route) => ({ ...route, points: points(route.path) }));
+  trees = FORESTS.flatMap((forest, f) =>
+    TREE_OFFSETS.slice(0, forest.trees).map(([dx, dy], t) => {
+      const r = 0.2 + ((f + t) % 3) * 0.03;
+      const x = forest.x + dx;
+      const y = forest.y + dy;
+      return {
+        x: round(x),
+        y: round(y),
+        r: round(r),
+        lightX: round(x - r * 0.3),
+        lightY: round(y - r * 0.32),
+        lightR: round(r * 0.5),
+        shadowY: round(y + r * 0.95),
+      };
+    })
+  ).sort((a, b) => a.y - b.y);
+  peaks = [
+    ...PEAKS,
+    ...LANDMARKS.filter((l) => l.kind === "mountain").map((l) => ({
+      x: l.x,
+      y: l.y,
+      size: 0.9,
+    })),
+  ]
+    .sort((a, b) => a.y - b.y)
+    .map(peakShapes);
+  landmarkLabels = LANDMARKS.filter((l) => l.kind !== "road").map((l) => {
+    const below =
+      l.kind === "island" ? 0.95 : l.kind === "forest" ? 0.95 : 0.85;
+    return {
+      name: l.name,
+      x: l.labelX ?? (l.vertical ? l.x - 0.72 : l.x),
+      y: l.labelY ?? (l.vertical ? l.y : l.y + below),
+      transform: l.vertical ? `rotate(-90 ${l.x - 0.72} ${l.y})` : null,
+    };
+  });
+  roadLabels = LANDMARKS.filter((l) => l.kind === "road");
 
   get legs() {
     const legs = this.args.challenge.legs;
@@ -90,18 +186,15 @@ export default class WalkKantoMap extends Component {
     const stops = new Set(
       this.args.challenge.legs.flatMap((leg) => [leg.from, leg.to])
     );
-    return Object.entries(TOWNS).map(([name, town]) => {
-      const label = labelPosition(town, LABEL_SIDES[name]);
-      return {
-        name,
-        ...town,
-        stop: stops.has(name),
-        finish: name === this.args.challenge.finish,
-        labelX: label.x,
-        labelY: label.y,
-        anchor: label.anchor,
-      };
-    });
+    return Object.entries(TOWNS).map(([name, town]) => ({
+      name,
+      color: town.color,
+      squareX: town.x - TOWN_SIZE / 2,
+      squareY: town.y - TOWN_SIZE / 2,
+      stop: stops.has(name),
+      finish: name === this.args.challenge.finish,
+      ...labelBox(town, LABEL_SIDES[name], name),
+    }));
   }
 
   get clusters() {
@@ -124,16 +217,14 @@ export default class WalkKantoMap extends Component {
       const members = [...cluster.members].sort(
         (a, b) => challenge.isYou(b) - challenge.isYou(a) || b.meters - a.meters
       );
-      const shown = members.slice(0, MAX_FANNED);
       const hidden = members.slice(MAX_FANNED);
       return {
         style: trustHTML(percentStyle(cluster.x, cluster.y)),
-        avatars: shown.map((participant, index) => ({
+        avatars: members.slice(0, MAX_FANNED).map((participant) => ({
           username: participant.user.username,
           href: userPath(participant.user.username),
-          src: avatarUrl(participant.user.avatar_template, "medium"),
+          src: avatarUrl(participant.user.avatar_template, "small"),
           isYou: challenge.isYou(participant),
-          style: trustHTML(`--walk-fan: ${index}`),
           title: i18n("walking_challenge.map.walker_title", {
             username: participant.user.username,
             distance: challenge.format(participant.meters),
@@ -159,27 +250,78 @@ export default class WalkKantoMap extends Component {
           <title id="walk-map-title">{{i18n
               "walking_challenge.map.title"
             }}</title>
+          <defs>
+            <linearGradient id="walk-sea-depth" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#b9e0f6" />
+              <stop offset="1" stop-color="#86bfe6" />
+            </linearGradient>
+            <radialGradient cx="0.45" cy="0.4" id="walk-land-tone" r="0.75">
+              <stop offset="0" stop-color="#e6f0c9" />
+              <stop offset="1" stop-color="#cfe2a6" />
+            </radialGradient>
+            <pattern
+              height="1.1"
+              id="walk-waves"
+              patternUnits="userSpaceOnUse"
+              width="1.6"
+            >
+              <path
+                class="walk-map__wave"
+                d="M 0.1 0.35 q 0.15 -0.14 0.3 0 q 0.15 0.14 0.3 0 M 0.9 0.9 q 0.15 -0.14 0.3 0 q 0.15 0.14 0.3 0"
+              />
+            </pattern>
+            <filter height="1" id="walk-grain" width="1" x="0" y="0">
+              <feTurbulence
+                baseFrequency="1.6"
+                numOctaves="2"
+                seed="4"
+                type="fractalNoise"
+              />
+              <feColorMatrix
+                values="0 0 0 0 0.32  0 0 0 0 0.42  0 0 0 0 0.18  0 0 0 0.22 0"
+              />
+              <feComposite in2="SourceGraphic" operator="in" />
+            </filter>
+            <filter height="1.4" id="walk-lift" width="1.4" x="-0.2" y="-0.2">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="0.06" />
+              <feOffset dy="0.06" result="walk-blur" />
+              <feFlood flood-color="#1d2b1a" flood-opacity="0.35" />
+              <feComposite in2="walk-blur" operator="in" />
+              <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
           <rect class="walk-map__sea" height="40" width="40" x="-10" y="-10" />
-          <polygon class="walk-map__land" points={{this.land}} />
-          {{#each this.bays as |bay|}}
-            <ellipse
-              class="walk-map__harbor"
-              cx={{bay.x}}
-              cy={{bay.y}}
-              rx={{bay.rx}}
-              ry={{bay.ry}}
-            />
-          {{/each}}
+          <rect
+            class="walk-map__sea-waves"
+            height="40"
+            width="40"
+            x="-10"
+            y="-10"
+          />
+
+          <path class="walk-map__shallows" d={{this.land}} />
           {{#each this.islands as |island|}}
-            <ellipse
-              class="walk-map__island"
-              cx={{island.x}}
-              cy={{island.y}}
-              rx={{island.rx}}
-              ry={{island.ry}}
-            />
+            <path class="walk-map__shallows" d={{island}} />
+          {{/each}}
+          <path class="walk-map__land" d={{this.land}} />
+          <path class="walk-map__grain" d={{this.land}} />
+          {{#each this.islands as |island|}}
+            <path class="walk-map__land --island" d={{island}} />
+          {{/each}}
+          {{#each this.bays as |bay|}}
+            <path class="walk-map__bay" d={{bay}} />
           {{/each}}
 
+          {{#each this.roads as |road|}}
+            <polyline
+              class="walk-map__road-casing {{if road.sea '--sea'}}"
+              points={{road.points}}
+            />
+          {{/each}}
           {{#each this.roads as |road|}}
             <polyline
               class="walk-map__road {{if road.sea '--sea'}}"
@@ -187,42 +329,68 @@ export default class WalkKantoMap extends Component {
             ><title>{{road.name}}</title></polyline>
           {{/each}}
 
-          {{#each this.landmarks as |landmark|}}
-            <g class="walk-map__landmark --{{landmark.kind}}">
-              {{#if landmark.isMountain}}
-                <polygon points={{landmark.mountain}} />
-              {{else if landmark.isForest}}
-                <circle cx={{landmark.x}} cy={{landmark.y}} r="0.32" />
-              {{/if}}
-              <text
-                transform={{landmark.labelTransform}}
-                x={{landmark.labelX}}
-                y={{landmark.labelY}}
-              >{{landmark.name}}</text>
-            </g>
+          <g aria-hidden="true" class="walk-map__scenery">
+            {{#each this.trees as |tree|}}
+              <g class="walk-map__tree">
+                <ellipse
+                  class="walk-map__tree-shadow"
+                  cx={{tree.x}}
+                  cy={{tree.shadowY}}
+                  rx={{tree.r}}
+                  ry="0.08"
+                />
+                <circle cx={{tree.x}} cy={{tree.y}} r={{tree.r}} />
+                <circle
+                  class="walk-map__tree-light"
+                  cx={{tree.lightX}}
+                  cy={{tree.lightY}}
+                  r={{tree.lightR}}
+                />
+              </g>
+            {{/each}}
+            {{#each this.peaks as |peak|}}
+              <g class="walk-map__peak">
+                <polygon points={{peak.body}} />
+                <polygon class="walk-map__peak-shade" points={{peak.shade}} />
+                <polygon class="walk-map__peak-cap" points={{peak.cap}} />
+              </g>
+            {{/each}}
+          </g>
+
+          {{#each this.landmarkLabels as |landmark|}}
+            <text
+              class="walk-map__landmark-label"
+              transform={{landmark.transform}}
+              x={{landmark.x}}
+              y={{landmark.y}}
+            >{{landmark.name}}</text>
           {{/each}}
           {{#each this.roadLabels as |road|}}
             <text
               class="walk-map__road-label"
-              dy="-0.32"
+              dy="-0.34"
               transform="rotate(-90 {{road.x}} {{road.y}})"
               x={{road.x}}
               y={{road.y}}
             >{{road.name}}</text>
           {{/each}}
 
-          {{#each this.legs as |leg|}}
-            <g class="walk-map__leg {{if leg.sea '--sea'}}">
-              <title>{{leg.title}}</title>
+          <g class="walk-map__route" filter="url(#walk-lift)">
+            {{#each this.legs as |leg|}}
               <polyline class="walk-map__leg-casing" points={{leg.points}} />
-              <polyline class="walk-map__leg-line" points={{leg.points}} />
-              <path
-                class="walk-map__leg-arrow"
-                d="M -0.22 -0.2 L 0.2 0 L -0.22 0.2 z"
-                transform={{leg.arrow}}
-              />
-            </g>
-          {{/each}}
+            {{/each}}
+            {{#each this.legs as |leg|}}
+              <g class="walk-map__leg {{if leg.sea '--sea'}}">
+                <title>{{leg.title}}</title>
+                <polyline class="walk-map__leg-line" points={{leg.points}} />
+                <path
+                  class="walk-map__leg-arrow"
+                  d="M -0.2 -0.18 L 0.2 0 L -0.2 0.18 z"
+                  transform={{leg.arrow}}
+                />
+              </g>
+            {{/each}}
+          </g>
 
           {{#each this.towns as |town|}}
             <g
@@ -230,14 +398,51 @@ export default class WalkKantoMap extends Component {
                 {{unless town.stop '--off-route'}}
                 {{if town.finish '--finish'}}"
             >
-              <circle cx={{town.x}} cy={{town.y}} fill={{town.color}} r="0.4" />
+              <rect
+                class="walk-map__town-marker"
+                fill={{town.color}}
+                filter="url(#walk-lift)"
+                height="0.62"
+                rx="0.12"
+                width="0.62"
+                x={{town.squareX}}
+                y={{town.squareY}}
+              />
+              <rect
+                class="walk-map__town-label-bg"
+                height="0.6"
+                rx="0.3"
+                width={{town.rectWidth}}
+                x={{town.rectX}}
+                y={{town.rectY}}
+              />
               <text
-                text-anchor={{town.anchor}}
-                x={{town.labelX}}
-                y={{town.labelY}}
+                class="walk-map__town-label"
+                text-anchor="middle"
+                x={{town.textX}}
+                y={{town.textY}}
               >{{town.name}}</text>
             </g>
           {{/each}}
+
+          <g
+            aria-hidden="true"
+            class="walk-map__compass"
+            transform="translate(17.2 14.6)"
+          >
+            <circle r="0.62" />
+            <polygon class="--north" points="0,-0.95 0.16,-0.16 -0.16,-0.16" />
+            <polygon points="0,0.95 0.16,0.16 -0.16,0.16" />
+            <polygon points="0.95,0 0.16,0.16 0.16,-0.16" />
+            <polygon points="-0.95,0 -0.16,0.16 -0.16,-0.16" />
+            <text y="-1.08">N</text>
+          </g>
+          <text
+            aria-hidden="true"
+            class="walk-map__region"
+            x="16.6"
+            y="-0.35"
+          >Kanto</text>
         </svg>
 
         <div class="walk-map__walkers">
@@ -249,10 +454,9 @@ export default class WalkKantoMap extends Component {
                   class="walk-map__walker {{if avatar.isYou '--you'}}"
                   data-user-card={{avatar.username}}
                   href={{avatar.href}}
-                  style={{avatar.style}}
                   title={{avatar.title}}
                 >
-                  <img alt="" height="32" src={{avatar.src}} width="32" />
+                  <img alt="" height="24" src={{avatar.src}} width="24" />
                 </a>
               {{/each}}
               {{#if cluster.more}}

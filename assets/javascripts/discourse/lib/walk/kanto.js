@@ -1,7 +1,7 @@
 // Kanto geography in Gen 1 Town Map grid units (x east, y south). Town
 // positions follow the in-game Town Map; routes follow the real road network.
 
-export const VIEW_BOX = { x: -1.6, y: -1.4, width: 20, height: 17.8 };
+export const VIEW_BOX = { x: -2.3, y: -1.4, width: 20.7, height: 17.8 };
 
 export const TOWNS = {
   "Pallet Town": { x: 2, y: 11, color: "#f4f1e8" },
@@ -21,7 +21,7 @@ export const TOWNS = {
 export const LABEL_SIDES = {
   "Pallet Town": "left",
   "Viridian City": "left",
-  "Pewter City": "left",
+  "Pewter City": "above",
   "Cerulean City": "above",
   "Saffron City": "above-right",
   "Celadon City": "above",
@@ -33,10 +33,17 @@ export const LABEL_SIDES = {
 };
 
 export const LANDMARKS = [
-  { name: "Viridian Forest", x: 2, y: 6, kind: "forest" },
+  {
+    name: "Viridian Forest",
+    x: 2,
+    y: 6,
+    kind: "forest",
+    labelX: 0.75,
+    labelY: 7.2,
+  },
   { name: "Mt. Moon", x: 6, y: 3, kind: "mountain" },
   { name: "Rock Tunnel", x: 14, y: 3, kind: "mountain" },
-  { name: "Victory Road", x: 0, y: 3.6, kind: "mountain", vertical: true },
+  { name: "Victory Road", x: 0, y: 4.2, kind: "mountain", vertical: true },
   { name: "Seafoam Islands", x: 5, y: 15, kind: "island" },
   { name: "Cycling Road", x: 4, y: 9, kind: "road" },
 ];
@@ -54,6 +61,34 @@ export const LAND = [
   [1.3, 11.7],
   [1.3, 8.7],
   [-0.7, 8.7],
+];
+
+// Scenery only: tree clusters and peaks placed in open land, clear of roads.
+export const FORESTS = [
+  { x: 1.0, y: 6.3, trees: 5 },
+  { x: 2.9, y: 5.9, trees: 4 },
+  { x: 6.3, y: 7.6, trees: 7 },
+  { x: 7.7, y: 10.6, trees: 6 },
+  { x: 5.6, y: 11.3, trees: 4 },
+  { x: 12.2, y: 7.2, trees: 6 },
+  { x: 12.9, y: 9.95, trees: 3 },
+  { x: 15.0, y: 7.6, trees: 4 },
+  { x: 8.5, y: 0.9, trees: 4 },
+  { x: 0.6, y: 0.4, trees: 3 },
+  { x: 3.0, y: 9.6, trees: 3 },
+];
+
+export const PEAKS = [
+  { x: 3.1, y: 1.6, size: 0.8 },
+  { x: 4.1, y: 1.1, size: 1 },
+  { x: 5.1, y: 1.7, size: 0.75 },
+  { x: 5.6, y: 2.8, size: 0.8 },
+  { x: 6.5, y: 2.6, size: 1.05 },
+  { x: 13.6, y: 3.2, size: 0.8 },
+  { x: 14.5, y: 2.9, size: 1 },
+  { x: 15.0, y: 0.6, size: 0.7 },
+  { x: -0.25, y: 4.6, size: 0.75 },
+  { x: 0.35, y: 3.9, size: 0.95 },
 ];
 
 // Vermilion's harbor, a bay just south of the city.
@@ -369,4 +404,43 @@ export function pointAlong(path, fraction) {
   }
   const [x, y] = path.at(-1);
   return { x, y, angle: 0 };
+}
+
+// A deterministic wobble so coastlines look drawn rather than ruled.
+function wobble(i, seed) {
+  const n = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453;
+  return (n - Math.floor(n)) * 2 - 1;
+}
+
+// Turns a polygon into a smooth closed path: subdivide each edge, nudge the
+// new points sideways a little, then round every corner with curves.
+export function shorePath(
+  polygon,
+  { seed = 1, step = 0.6, wiggle = 0.14 } = {}
+) {
+  const dense = [];
+  polygon.forEach(([ax, ay], index) => {
+    const [bx, by] = polygon[(index + 1) % polygon.length];
+    const length = Math.hypot(bx - ax, by - ay);
+    const pieces = Math.max(1, Math.round(length / step));
+    const nx = -(by - ay) / length;
+    const ny = (bx - ax) / length;
+    for (let p = 0; p < pieces; p++) {
+      const t = p / pieces;
+      const offset = p === 0 ? 0 : wobble(dense.length, seed) * wiggle;
+      dense.push([
+        ax + (bx - ax) * t + nx * offset,
+        ay + (by - ay) * t + ny * offset,
+      ]);
+    }
+  });
+
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const fmt = ([x, y]) => `${x.toFixed(3)} ${y.toFixed(3)}`;
+  let d = `M ${fmt(mid(dense.at(-1), dense[0]))}`;
+  dense.forEach((point, index) => {
+    const next = dense[(index + 1) % dense.length];
+    d += ` Q ${fmt(point)} ${fmt(mid(point, next))}`;
+  });
+  return `${d} Z`;
 }

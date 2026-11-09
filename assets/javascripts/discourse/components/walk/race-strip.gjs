@@ -98,7 +98,7 @@ export default class WalkRaceStrip extends Component {
               style={{racer.style}}
               title={{racer.title}}
             >
-              <img alt="" height="28" src={{racer.src}} width="28" />
+              <img alt="" height="22" src={{racer.src}} width="22" />
             </a>
           {{/each}}
         </div>
